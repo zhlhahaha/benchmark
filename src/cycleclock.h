@@ -22,7 +22,7 @@
 #define BENCHMARK_CYCLECLOCK_H_
 
 #include <cstdint>
-
+#include <stdio.h>
 #include "benchmark/benchmark.h"
 #include "internal_macros.h"
 
@@ -139,12 +139,16 @@ inline BENCHMARK_ALWAYS_INLINE int64_t Now() {
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return static_cast<int64_t>(ts.tv_sec) * 1000000000 + ts.tv_nsec;
 #elif defined(__aarch64__)
+  #define isb()        asm volatile("isb" : : : "memory")
   // System timer of ARMv8 runs at a different frequency than the CPU's.
   // The frequency is fixed, typically in the range 1-50MHz.  It can be
   // read at CNTFRQ special register.  We assume the OS has set up
   // the virtual timer properly.
   int64_t virtual_timer_value;
+  isb();
   asm volatile("mrs %0, cntvct_el0" : "=r"(virtual_timer_value));
+  isb();
+  printf("Haolin007 cntvct_el0: %ld\n", virtual_timer_value);
   return virtual_timer_value;
 #elif defined(__ARM_ARCH)
   // V6 is the earliest arch that has a standard cyclecount
